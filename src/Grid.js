@@ -7,7 +7,10 @@ import src.Bubble as Bubble;
 //It handles the creation and addition of its own bubbles
 exports = Class(Group, function (supr) {
     
+    var _this;
     var radius;
+    var columns, rows;
+    var grid;
     
     this.init = function (opts) {
         this.name = "Grid";
@@ -24,15 +27,60 @@ exports = Class(Group, function (supr) {
         
         radius = opts.radius;
         
+        columns = opts.columns;
+        rows = opts.rows;
+        radius = opts.radius;
+        _this = this;
+        
         this.build(); 
     };
     
     //Creates the grid and its bubbles
     this.build = function(){
-        var bubble = this.addActor();
+        createGrid();
+    };
+    
+    //Creates the bidimensional array containing bubbles
+    function createGrid(){
+        grid = new Array(columns);
         
-        //bubble.randomize();
+        for(var col=0;col<columns;col++){
+            grid[col] = new Array(rows);
+            
+            for(var row=0;row<rows;row++){
+                addBubbleAt(col,row);
+            }
+            
+        }
+    };
+    
+    //Generates a bubble at a given position in the grid
+    function addBubbleAt(column,row){
+        removeBubbleAt(column,row);
         
+        var bubbleSettings = {
+            x:0,
+            y:0,
+            radius: radius
+        };
+                
+        var bubble = _this.addActor(bubbleSettings);
+        
+        //I save handy stuff in the bubble object
+        bubble.gridInfo = {
+            column:col,
+            row:row
+        };
+        
+        grid[col][row] = bubble; 
+    };
+    
+    //Removes the bubble in a given position in the grid
+    function removeBubbleAt(column,row){
+        if(grid[col][row]){
+            grid[col][row].remove();
+            grid[col][row] = null;
+        }  
     };
     
 });

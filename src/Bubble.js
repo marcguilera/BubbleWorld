@@ -30,17 +30,10 @@ exports = Class(Actor, function (supr) {
         
         suprPrototype.reset.call(this,opts)
         
-    }
-    
-    this.randomize = function(){
-        //this.view._img = new Image();
-        this.view.setImage('resources/images/bubbles/blue_bubble.png');
-        this.view.width=50;
     };
 
     this.remove = function(){
         //Back to the pool
-        this.randomize();
         this.destroy();
     };
     
