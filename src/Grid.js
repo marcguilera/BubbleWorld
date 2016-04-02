@@ -95,4 +95,8 @@ exports = Class(Group, function (supr) {
         }  
     };
     
+    this.collide = function(otherBubble, gridBubble){
+        
+    };
+    
 });
