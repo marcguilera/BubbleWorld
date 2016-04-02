@@ -28,6 +28,12 @@ exports = Class(Actor, function (supr) {
         
         opts.image = getImageForType(type);
         
+        opts.hitOpts = {
+            radius : opts.width/3,
+            offsetX: opts.width/2,
+            offsetY: opts.width/2
+        };
+        
         suprPrototype.reset.call(this,opts)
         
     };

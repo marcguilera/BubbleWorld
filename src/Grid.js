@@ -58,28 +58,40 @@ exports = Class(Group, function (supr) {
     function addBubbleAt(column,row){
         removeBubbleAt(column,row);
         
-        var bubbleSettings = {
-            x:0,
-            y:0,
-            radius: radius
-        };
-                
+        var bubbleSettings = getBubbleCoordinate(column,row);
+        bubbleSettings.radius = radius;
+        
         var bubble = _this.addActor(bubbleSettings);
         
         //I save handy stuff in the bubble object
         bubble.gridInfo = {
-            column:col,
+            column:column,
             row:row
         };
         
-        grid[col][row] = bubble; 
+        grid[column][row] = bubble; 
     };
+    
+    //Returns the x,y given a cell. I offseted y but
+    //I could've offseted x equally.
+    function getBubbleCoordinate(column, row) {
+        var size = radius*2;
+        var x = column * size;
+        var y = row * size;
+     
+        // y offset for odd columns
+        if (column % 2) {
+            y += radius;
+        }
+        
+        return { x: x, y: y };
+    }
     
     //Removes the bubble in a given position in the grid
     function removeBubbleAt(column,row){
-        if(grid[col][row]){
-            grid[col][row].remove();
-            grid[col][row] = null;
+        if(grid[column][row]){
+            grid[column][row].remove();
+            grid[column][row] = null;
         }  
     };
     

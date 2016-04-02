@@ -9,9 +9,9 @@ exports = scene(function() {
 
 function createGrid(){
     var grid = new Grid({
-      columns: 5,
-      rows: 5,
-      radius: 50
+      columns: 6,
+      rows: 6,
+      radius: 47
     });
     
     scene.groups.push(grid);
