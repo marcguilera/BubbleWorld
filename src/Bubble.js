@@ -26,12 +26,16 @@ exports = Class(Actor, function (supr) {
         
         opts.image = getImageForType(this.type);
         
-        
+        //A little bit smaller than the actual radius so the player can actually
+        //aim. Not big enough to go through bubbles, of course.
         opts.hitOpts = {
-            radius : opts.radius
+            radius : opts.radius*.8,
+            offsetX: opts.radius,
+            offsetY: opts.radius
         };
         
-        suprPrototype.reset.call(this,opts)
+        
+        suprPrototype.reset.call(this,opts);
         
     };
 
