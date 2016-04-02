@@ -1,0 +1,22 @@
+{
+  "appID": "bcdc8170473648d791ff6fb9f5910216",
+  "dependencies": {
+    "devkit-accelerometer": "https://github.com/gameclosure/accelerometer#v2.0.0",
+    "devkit-core": "https://github.com/gameclosure/devkit-core#v4.5.0",
+    "devkit-effects": "https://github.com/gameclosure/devkit-effects.git#v1.0.3",
+    "devkit-entities": "https://github.com/gameclosure/devkit-entities.git#v0.5.3",
+    "devkit-parallax": "https://github.com/gameclosure/devkit-parallax#v0.4.0",
+    "devkit-scene": "https://github.com/gameclosure/devkit-scene#"
+  },
+  "shortName": "bubbleworld",
+  "studio": {
+    "domain": "studio.example.com",
+    "name": "Marc Guilera",
+    "stagingDomain": "staging.example.com"
+  },
+  "supportedOrientations": [
+    "portrait",
+    "landscape"
+  ],
+  "title": "Bubble World"
+}
