@@ -107,7 +107,8 @@ exports = Class(Group, function (supr) {
     
     //Removes the bubble in a given position in the grid
     function removeBubbleAt(column,row){
-        if(grid[column][row]){
+        var valid = validateCell(column,row);
+        if(valid){
             grid[column][row].remove();
             grid[column][row] = null;
         }  
@@ -118,11 +119,32 @@ exports = Class(Group, function (supr) {
     this.collide = function(bubble, gridBubble){
         console.log('Computing collisions in the grid');
         
-        snapBubble(bubble,gridBubble);
+        //Look for bubble groups
+        var group = findGroup(gridBubble.gridInfo.column,gridBubble.gridInfo.row, bubble.type);
+        console.log('Found a group of '+group.length);
         
-        //var group = findGroup(gridInfo.column,gridInfo.row,bubble.type);
-        //console.log('Found a group of '+group.length);
+        //If the group is larger than 2 (3 with the coming bubble)
+        if(group.length>=2){
+            for(var i=0;i<group.length;i++){
+                var position = group[i].gridInfo;
+                removeBubbleAt(position.column,position.row);
+            }
+            gravity();
+        }else{
+            //Nope, let's snap the coming bubble.
+            snapBubble(bubble,gridBubble);
+        }
+
     };
+    
+    //Erases the bubbles that are floating in the air
+    function gravity(){
+        
+    }
+    
+    function validateCell(column,row){
+        return ((column>=0&&column<=columns&&row>=0&&row<=rows) && (grid[column][row] != null))
+    }
 
     function snapBubble(bubble,gridBubble){
         //1 Get the center of the comming bubble
@@ -134,7 +156,7 @@ exports = Class(Group, function (supr) {
         
         addBubbleAt(gridPosition.column,gridPosition.row,bubble.type);
         
-    }
+    };
 
     //Finds groups of tiles given the tile at a certain location
     //and matching the given type. This could be done with recursion
@@ -145,8 +167,8 @@ exports = Class(Group, function (supr) {
 
         
         //2. If there just isn't a bubble in the cell, leave
-        var validInputs = column>=0&&column<=columns&&row>=0&&row<=rows;
-        if(!validInputs&&grid[column][row]==null){
+        var validInputs = validateCell(column,row);
+        if(!validInputs){
             return [];
         }
         
@@ -187,6 +209,8 @@ exports = Class(Group, function (supr) {
                 //We add the neighbors to the pending array so they
                 //can be processed
                 pending = pending.concat(neighors);
+                
+                console.log(neighors.length);
             }
         }
         
@@ -198,26 +222,27 @@ exports = Class(Group, function (supr) {
     //Gets all the neighbors for a given bubble
     //takes into consideration the offsets in a hex grid
     function getNeighbors(column,row){
-        var validInputs = column>=0&&column<=columns&&row>=0&&row<=rows;
-        if(!validInputs&&grid[column][row]==null){
+        var validInputs = validateCell(column,row);
+        if(!validInputs){
             return [];
         }
         
         var neighbors = [];
+
         //NORTH
         if(row>0 && grid[column][row-1]!=null){
             neighbors.push(grid[column][row-1]);
         }
         //SOUTH
-        if(row<rows && grid[column][row+1]!=null){
+        if(row+1<rows && grid[column][row+1]!=null){
             neighbors.push(grid[column][row+1]);
         }
         //NORTH-EAST
-        if(column<columns && grid[column+1][row]!=null){
+        if(column+1<columns && grid[column+1][row]!=null){
             neighbors.push(grid[column+1][row]);
         }
         //SOUTH-EAST
-        if(row<rows && column<columns && grid[column+1][row+1]!=null){
+        if(row+1<rows && column+1<columns && grid[column+1][row+1]!=null){
             neighbors.push(grid[column+1][row+1]);
         }
         
@@ -226,10 +251,9 @@ exports = Class(Group, function (supr) {
             neighbors.push(grid[column-1][row]);
         }
         //SOUTH-WEST
-        if(row<rows && column > 0 && grid[column-1][row+1]!=null){
+        if(row+1<rows && column > 0 && grid[column-1][row+1]!=null){
             neighbors.push(grid[column-1][row+1]);
         }
-        
         
         return neighbors;
     };

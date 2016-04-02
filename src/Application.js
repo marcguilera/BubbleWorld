@@ -53,6 +53,14 @@ function addCollisionDetection(bubble){
     collision(bubble,gridBubble);
   });
   
+  //Collision with walls
+  scene.onCollision(bubble,[scene.camera.leftWall,scene.camera.rightWall],function(){
+    bubble.vx = -bubble.vx;
+  });
+  scene.onCollision(bubble,[scene.camera.topWall,scene.camera.bottomWall],function(){
+    bubble.vy = -bubble.vy;
+  });
+  
 };
 
 function removeCollisionDetection(){
