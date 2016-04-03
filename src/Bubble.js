@@ -36,7 +36,7 @@ exports = Class(Actor, function (supr) {
         
         
         suprPrototype.reset.call(this,opts);
-        
+         
     };
 
     this.remove = function(){

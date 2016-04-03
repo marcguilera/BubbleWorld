@@ -70,7 +70,13 @@ exports = Class(Group, function (supr) {
             row:row
         };
         
-        grid[column][row] = bubble; 
+        grid[column][row] = bubble;
+        
+        //Update columns and rows
+        columns = Math.max(column+1,columns);
+        rows = Math.max(row+1,rows);
+        
+        return bubble;
     };
     
     //Returns the x,y given a cell. I offseted y but
@@ -118,44 +124,58 @@ exports = Class(Group, function (supr) {
     //from within the grid
     this.collide = function(bubble, gridBubble){
         console.log('Computing collisions in the grid');
+
+        //Snap the bubble in place
+        var snappedBubble = snapBubble(bubble,gridBubble);
+        var gridInfo = snappedBubble.gridInfo;
         
-        //Look for bubble groups
-        var group = findGroup(gridBubble.gridInfo.column,gridBubble.gridInfo.row, bubble.type);
+        var group = findGroup(gridInfo.column,gridInfo.row, snappedBubble.type);
+        
         console.log('Found a group of '+group.length);
         
-        //If the group is larger than 2 (3 with the coming bubble)
-        if(group.length>=2){
+        if(group.length>=3){
             for(var i=0;i<group.length;i++){
                 var position = group[i].gridInfo;
-                removeBubbleAt(position.column,position.row);
+                dropBubbleAt(position.column,position.row);
             }
-            gravity();
-        }else{
-            //Nope, let's snap the coming bubble.
-            snapBubble(bubble,gridBubble);
+            performGravity();
         }
+        
 
     };
     
+    function dropBubbleAt(column,row){
+        var validInputs = validateCell(column,row);
+        if(validInputs){
+            removeBubbleAt(column,row);
+        }
+    };
+    
     //Erases the bubbles that are floating in the air
-    function gravity(){
+    function performGravity(){
         
-    }
+    };
     
     function validateCell(column,row){
-        return ((column>=0&&column<=columns&&row>=0&&row<=rows) && (grid[column][row] != null))
+        var withinRange = column>=0&&column<columns&&row>=0&&row<rows;
+        if(withinRange){
+            return grid[column][row] != null;
+        }else{
+            return false;
+        }
     }
 
     function snapBubble(bubble,gridBubble){
         //1 Get the center of the comming bubble
         var x = bubble.x+bubble.width/2;
-        var y = bubble.y+bubble.height/2;
+        var y = bubble.y+bubble.height;
         
         //2 Find the closest actual legal cell
         var gridPosition = getGridPosition(x,y);
+
+        var b = addBubbleAt(gridPosition.column,gridPosition.row,bubble.type);
         
-        addBubbleAt(gridPosition.column,gridPosition.row,bubble.type);
-        
+        return b;
     };
 
     //Finds groups of tiles given the tile at a certain location
@@ -168,6 +188,7 @@ exports = Class(Group, function (supr) {
         
         //2. If there just isn't a bubble in the cell, leave
         var validInputs = validateCell(column,row);
+
         if(!validInputs){
             return [];
         }
@@ -175,43 +196,33 @@ exports = Class(Group, function (supr) {
         //3. Grab the desired bubble
         var bubble = grid[column][row];
         
-        //4. Check if the bubble is the same tipe as the starting one. 
-        if(bubble.type!=type){
-            return [];
-        }
-        
-        //5. Create the array of bubbles to check and include the starting one
+        //4. Create the array of bubbles to check and include the starting one
         var pending = [bubble];
         
-        //6. Create the group to add the bubbles needed
+        //5. Create the group to add the bubbles needed
         var group = [];
         
-        //7. Loop until there aren't any bubbles pending to process
+        //6. Loop until there aren't any bubbles pending to process
         while(pending.length > 0){
-
+            
             //Grab and delete the last element in the array
             var processingBubble = pending.pop();
-            //If this is already checked, continue
-            if(processingBubble.processed){
-                continue;
-            }
-            
-            //Check if the type matches
-            if(processingBubble.type == type){
+            if(!processingBubble.processed && processingBubble.type == type){
                 //Add the tile to the group
                 group.push(processingBubble);
-                processingBubble.processed = true;
                 
                 //We need to check for the neighboring bubbles
                 var gridInfo = processingBubble.gridInfo;
                 var neighors = getNeighbors(gridInfo.column,gridInfo.row);
                 
+                for(var i=0;i<neighors.length;i++) neighors[i].showHitBounds();
+                
                 //We add the neighbors to the pending array so they
                 //can be processed
                 pending = pending.concat(neighors);
-                
-                console.log(neighors.length);
             }
+            
+            processingBubble.processed = true;
         }
         
         //Return the group
@@ -228,33 +239,58 @@ exports = Class(Group, function (supr) {
         }
         
         var neighbors = [];
-
+        
+        
+        //They depend on if the column is odd or even
+        //For odd -> (c,r-1),(c,r+1),(c-1,r),(c-1,r+1),(c+1,r),(c+1,r+1)
+        //For even -> (c,r-1),(c,r+1),(c-1,r-1),(c-1,r),(c+1,r-1),(c+1,r)
+        
         //NORTH
-        if(row>0 && grid[column][row-1]!=null){
+        if(validateCell(column,row-1)){
             neighbors.push(grid[column][row-1]);
         }
+        
         //SOUTH
-        if(row+1<rows && grid[column][row+1]!=null){
+        if(validateCell(column,row+1)){
             neighbors.push(grid[column][row+1]);
         }
-        //NORTH-EAST
-        if(column+1<columns && grid[column+1][row]!=null){
-            neighbors.push(grid[column+1][row]);
-        }
-        //SOUTH-EAST
-        if(row+1<rows && column+1<columns && grid[column+1][row+1]!=null){
-            neighbors.push(grid[column+1][row+1]);
-        }
         
-        //NORTH-WEST
-        if(column>0 && grid[column-1][row]!=null){
-            neighbors.push(grid[column-1][row]);
+        if(column%2){ //ODD
+            //NORTH-WEST
+            if(validateCell(column-1,row)){
+                neighbors.push(grid[column-1][row]);
+            }
+            //SOUTH-WEST
+            if(validateCell(column-1,row+1)){
+                neighbors.push(grid[column-1][row+1]);
+            }
+            //NORTH-EAST
+            if(validateCell(column+1,row)){
+                neighbors.push(grid[column+1][row]);
+            }
+            //SOUTH-EAST
+            if(validateCell(column+1,row+1)){
+                neighbors.push(grid[column+1][row+1]);
+            }
+        }else{ //EVEN
+            //NORTH-WEST
+            if(validateCell(column-1,row-1)){
+                neighbors.push(grid[column-1][row-1]);
+            }
+            //SOUTH-WEST
+            if(validateCell(column-1,row)){
+                neighbors.push(grid[column-1][row]);
+            }
+            //NORTH-EAST
+            if(validateCell(column+1,row-1)){
+                neighbors.push(grid[column+1][row-1]);
+            }
+            //SOUTH-EAST
+            if(validateCell(column+1,row)){
+                neighbors.push(grid[column+1][row]);
+            }
         }
-        //SOUTH-WEST
-        if(row+1<rows && column > 0 && grid[column-1][row+1]!=null){
-            neighbors.push(grid[column-1][row+1]);
-        }
-        
+
         return neighbors;
     };
     
