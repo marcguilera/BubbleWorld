@@ -1,3 +1,4 @@
+import scene;
 import scene.actor.Actor as Actor;
 import ui.resource.Image as Image;
 
@@ -7,10 +8,12 @@ exports = Class(Actor, function (supr) {
     var BUBBLE;
     var image;
     
+    
     this.init = function (opts) {
         this.name = "Bubble";
         BUBBLE = GLOBAL.bubbleTypes;
         supr(this, 'init', opts); 
+        
     }
     
     //This actually sets the bubble,
@@ -22,7 +25,7 @@ exports = Class(Actor, function (supr) {
         opts.width = opts.width || opts.radius*2;
         opts.height = opts.height || opts.radius*2;
         
-        this.type = opts.type || Math.floor((Math.random() * 5));
+        this.type = opts.type || Math.floor((Math.random() * 5)+1);
         
         opts.image = getImageForType(this.type);
         
@@ -36,6 +39,15 @@ exports = Class(Actor, function (supr) {
         
         
         suprPrototype.reset.call(this,opts);
+        
+        //Destroy the bubble when it leaves the screen
+        this.onTick(function(){
+            if(this.x+this.width*2<0 || this.x-this.width*2>scene.camera.height || this.y+this.height*2<0 || this.y-this.height*2>scene.camera.height){
+                this.remove();
+            }
+        });
+        
+        
          
     };
 
@@ -43,6 +55,8 @@ exports = Class(Actor, function (supr) {
         //Back to the pool
         this.destroy();
     };
+    
+    
     
     function getImageForType(_type){
         switch(_type){

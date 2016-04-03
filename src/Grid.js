@@ -9,8 +9,10 @@ exports = Class(Group, function (supr) {
     
     var _this;
     var radius;
-    var columns, rows;
+    var columns, rows, maxRows;
     var grid;
+    var points;
+    var interval;
     
     this.init = function (opts) {
         this.name = "Grid";
@@ -18,6 +20,7 @@ exports = Class(Group, function (supr) {
         opts.columns = opts.columns || 5;
         opts.rows = opts.rows || 5;
         opts.radius = opts.radius || 100;
+        opts.maxRows = opts.maxRows || opts.rows+2;
         
         supr(this, 'init', opts);  
         
@@ -30,6 +33,9 @@ exports = Class(Group, function (supr) {
         columns = opts.columns;
         rows = opts.rows;
         radius = opts.radius;
+        maxRows = opts.maxRows;
+        points = 0;
+        
         _this = this;
         
         this.build(); 
@@ -52,6 +58,34 @@ exports = Class(Group, function (supr) {
             }
             
         }
+        
+        interval = scene.addInterval(newRow,10000);
+    };
+    
+    //Adds a row on top
+    function newRow(){
+        
+        for(var col=0;col<columns;col++){
+            //Creates the space on top
+            grid[col].unshift(null);
+            addBubbleAt(col,0);
+        }
+        rows++;
+        
+        //Update grid info
+        for(var column=0;column<columns;column++){
+            for(var row=0;row<rows;row++){
+                if(grid[column][row]!=null){
+                    var coords = getBubbleCoordinate(column,row);
+                    grid[column][row].x=coords.x;
+                    grid[column][row].y=coords.y;
+                    grid[column][row].gridInfo.column=column;
+                    grid[column][row].gridInfo.row=row;
+                }
+            }
+        }
+        
+        checkEndGame();
     };
     
     //Generates a bubble at a given position in the grid
@@ -75,7 +109,7 @@ exports = Class(Group, function (supr) {
         //Update columns and rows
         columns = Math.max(column+1,columns);
         rows = Math.max(row+1,rows);
-        
+
         return bubble;
     };
     
@@ -129,7 +163,7 @@ exports = Class(Group, function (supr) {
         var snappedBubble = snapBubble(bubble,gridBubble);
         var gridInfo = snappedBubble.gridInfo;
         
-        var group = findGroup(gridInfo.column,gridInfo.row, snappedBubble.type);
+        var group = findGroup(gridInfo.column,gridInfo.row, snappedBubble.type, true);
         
         console.log('Found a group of '+group.length);
         
@@ -141,20 +175,84 @@ exports = Class(Group, function (supr) {
             performGravity();
         }
         
+        checkEndGame();
 
     };
+    
+    function checkEndGame(){
+        var gameEnded = false;
+        //Check if lost
+        
+        var lost = hasLost();
+        if(lost) {
+            gameEnded=true;
+            _this.onGameLost(points);
+        }
+        //Check if won
+        var won = hasWon();
+        if(won){
+            gameEnded=true;
+            _this.onGameWon(points);
+        }
+        
+        if(gameEnded){
+            if(interval){
+                scene.removeInterval(interval);
+            }
+            _this.destroy();
+        }
+    }
+    
+    function hasWon(){
+        for(var column=0;column<columns;column++){
+            for(var row=0;row<rows;row++){
+                if(grid[column][row]!=null){
+                    return false;
+                }
+            }
+        }
+        //If we got here there is no bubble in the grid
+        return true;
+    }
+    
+    function hasLost(){
+        var lowestRow = 0;
+        for(var column=0;column<columns;column++){
+            for(var row=0;row<rows;row++){
+                if(grid[column][row]!=null){
+                    lowestRow = Math.max(lowestRow,row);
+                }
+            }
+        }
+        return lowestRow>=maxRows;
+    }
     
     function dropBubbleAt(column,row){
         var validInputs = validateCell(column,row);
         if(validInputs){
-            removeBubbleAt(column,row);
+            var bubble = grid[column][row];
+            bubble.ay = 9000; //Apply gravity
+            points+=10;
+            
+            //Remove it from the grid
+            grid[column][row] = null;
         }
     };
     
     //Erases the bubbles that are floating in the air
+    //It is understood that a bubble is in the air when
+    //its not touched by any other bubble
     function performGravity(){
-        
+        var floatingGroups = findFloatingGroups();
+        for(var i=0;i<floatingGroups.length;i++){
+            var group = floatingGroups[i];
+            for(var j=0;j<group.length;j++){
+                var position = group[j].gridInfo;
+                dropBubbleAt(position.column,position.row);
+            }
+        }
     };
+    
     
     function validateCell(column,row){
         var withinRange = column>=0&&column<columns&&row>=0&&row<rows;
@@ -173,7 +271,7 @@ exports = Class(Group, function (supr) {
         //2 Find the closest actual legal cell
         var gridPosition = getGridPosition(x,y);
 
-        var b = addBubbleAt(gridPosition.column,gridPosition.row,bubble.type);
+        var b = addBubbleAt(gridPosition.column,gridPosition.row, bubble.type);
         
         return b;
     };
@@ -181,9 +279,12 @@ exports = Class(Group, function (supr) {
     //Finds groups of tiles given the tile at a certain location
     //and matching the given type. This could be done with recursion
     //but i feel without it's much more readable and reusable.
-    function findGroup(column, row, type){
+    //Pass a null type if you don't care about the type
+    function findGroup(column, row, type, reset){
         //1. Reset checked state
-        resetChecked();
+        if(reset){
+            resetChecked();
+        }
 
         
         //2. If there just isn't a bubble in the cell, leave
@@ -207,27 +308,73 @@ exports = Class(Group, function (supr) {
             
             //Grab and delete the last element in the array
             var processingBubble = pending.pop();
-            if(!processingBubble.processed && processingBubble.type == type){
-                //Add the tile to the group
-                group.push(processingBubble);
-                
-                //We need to check for the neighboring bubbles
-                var gridInfo = processingBubble.gridInfo;
-                var neighors = getNeighbors(gridInfo.column,gridInfo.row);
-                
-                for(var i=0;i<neighors.length;i++) neighors[i].showHitBounds();
-                
-                //We add the neighbors to the pending array so they
-                //can be processed
-                pending = pending.concat(neighors);
-            }
             
-            processingBubble.processed = true;
+            if(!processingBubble.checked){
+                if(type==null || processingBubble.type == type){
+                    //Add the tile to the group
+                    group.push(processingBubble);
+                    
+                    //We need to check for the neighboring bubbles
+                    var gridInfo = processingBubble.gridInfo;
+                    var neighors = getNeighbors(gridInfo.column,gridInfo.row);
+                    
+                    //This line helps visually seeing if the neighbors are well calculated
+                    //for(var i=0;i<neighors.length;i++) neighors[i].showHitBounds();
+                    
+                    //We add the neighbors to the pending array so they
+                    //can be processed
+                    pending = pending.concat(neighors);
+                }
+            }
+            processingBubble.checked = true;
         }
         
         //Return the group
         return group;
         
+    };
+    
+    //Finds groups that are floating in the air in the grid
+    function findFloatingGroups(){
+        //1. Don't want to check twice for the same bubble
+        resetChecked();
+        
+        var groups = [];
+        
+        for(var column=0;column<columns;column++){
+            for(var row=0;row<rows;row++){
+                var bubble = grid[column][row];
+                
+                //If there isn't a bubble in the cell or there is
+                //but it has been checked, bye!
+                if(bubble!=null && !bubble.checked){
+                    var group = findGroup(column,row,null,false);
+                    
+                    //There are bubbles in the group
+                    if(group.length>0){
+                        //Assume a bubble is floating and prove otherwise
+                        var floating = true;
+                        //If any of the members of the group
+                        //is attached to ceiling (row==0) then
+                        //the group is attached.
+                        for(var i=0;i<group.length;i++){
+                            if(group[i].gridInfo.row==0){
+                                floating = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if(floating){
+                        groups.push(group);
+                    }
+                }
+                
+                
+            }
+        }
+        
+        return groups;
     };
     
     //Gets all the neighbors for a given bubble
@@ -305,5 +452,8 @@ exports = Class(Group, function (supr) {
             }
         }
     };
+    
+    this.onGameWon = function(){};
+    this.onGameLost = function(){};
     
 });

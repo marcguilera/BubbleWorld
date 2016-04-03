@@ -5,33 +5,99 @@ import src.Canon as Canon;
 
 var radius = 47;
 var columns = 6;
-var rows = 6;
+var maxRows = 8;
+var rows = 4;
 
 
 var canon;
 var grid;
 
+var points;
+var won = true;
+
+//This is like scene.state.add('game')
 exports = scene(function() {
     createEnum();
-    createGrid();
-    createCanon();
-    createTouchListener();
+    startGame();
 });
+
+scene.state.add('gameOver', function(){
+    console.log('GameOver!');
+    
+    //var gameOverBg = scene.ui.addImage({image:'resources/images/game_bg.png'});
+    if(won){
+      scene.addText("You won!",{y:200});
+    }else{
+      scene.addText("Game over :'(",{y:200});
+    }
+    
+    scene.addText("Points: "+points,{y:400});
+    scene.addText("Tap to retry: ",{y:600});
+    
+},{
+  tapToContinue: true,
+  nextState: 'game',
+  clearOnTransition: true
+});
+
 
 function createGrid(){
     grid = new Grid({
       columns: columns,
       rows: rows,
-      radius: radius
+      radius: radius,
+      maxRows: maxRows
     });
     
     scene.groups.push(grid);
+    
+    grid.onGameLost = function(_points){
+      console.log('Game lost. Points = '+_points);
+      //endGame();
+      won=false;
+      points=_points;
+      endGame();
+    };
+    
+    grid.onGameWon = function(_points){
+      console.log('Game won. Points ='+_points);
+      points = _points;
+      won=true;
+      endGame();
+    };
+};
+
+function startGame(){
+  createGrid();
+  createCanon();
+  createTouchListener();
+  
+}
+
+
+function endGame(){
+  //removeCollisionDetection();
+  removeTouchListener();
+  destroyCanon();
+  destroyGrid();
+  scene.groups = [];
+  scene.gameOver();
+  
+};
+
+
+function destroyCanon(){
+  canon.destroy();
+};
+
+function destroyGrid(){
+  grid.destroy();
 };
 
 function createCanon(){
     canon = new Canon({
       radius: radius,
-      speed: 200
+      speed: 600
     });
     
     scene.groups.push(canon);
@@ -82,11 +148,16 @@ function collision(bubble,groupBubble){
   canon.createBubble();
 };
 
+var listener = function(point){
+    canon.launchTo(point.x,point.y);
+};
+
 function createTouchListener(){ 
-    scene.screen.onDown(function(point){
-      console.log('Screen touch');
-      canon.launchTo(point.x,point.y);
-    });
+    scene.screen.onDown(listener);
+};
+
+function removeTouchListener(){
+    scene.screen.removeOnDown(listener);
 };
 
 
@@ -95,10 +166,10 @@ function createTouchListener(){
 //by working with meaningful names and not useless ints.
 function createEnum(){
     GLOBAL.bubbleTypes = {
-        RED: 0,
-        BLUE: 1,
-        ORANGE: 2,
-        PINK: 3,
-        GREEN: 4
+        RED: 1,
+        BLUE: 2,
+        ORANGE: 3,
+        PINK: 4,
+        GREEN: 5
     };
 };

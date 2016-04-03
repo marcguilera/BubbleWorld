@@ -9,10 +9,11 @@ import src.Bubble as Bubble;
 //It handles the creation and addition of its own bubbles
 exports = Class(Group, function (supr) {
 
-    var bubble = null;
     var radius;
     var speed;
-    var bubbleLaunched;
+    var queue = [];
+    var _this;
+    var x,y;
     
     this.init = function (opts) {
         this.name = "Canon";
@@ -25,7 +26,10 @@ exports = Class(Group, function (supr) {
         //Make sure the actors created by this group are of type
         //bubble
         this._ctor = Bubble;
-
+        
+        x = scene.screen.width/2-radius;
+        y = scene.screen.height-170;
+        
         this.build(); 
         
     };
@@ -33,36 +37,33 @@ exports = Class(Group, function (supr) {
     //Prepares the canon
     this.build = function(){
         this.createBubble();
+        this.createBubble();
+        this.createBubble();
     };
     
     //Creates a bubble rady to launch
     this.createBubble = function(){
-        //If there is already a bubble in there forget it!
-        if(bubble){
-            return;
+        if(queue.length<3){
+            var bubble = this.addActor({
+                x: scene.screen.width/2-radius,
+                radius: radius
+            });
+            
+            queue.push(bubble);
+            
+            for(var i=0;i<queue.length;i++){
+                queue[i].y=scene.screen.height-170+i*70;
+            }
         }
-        
-        bubble = this.addActor({
-            x: scene.screen.width/2-radius,
-            y: scene.screen.height-200,
-            radius: radius
-        });
     };
     
     this.launchTo = function(x,y){
-        //If there is nothing to launch, bye
-        if(bubble==null){
-            return;
+        if(queue.length>=3){
+            var bubble = queue.shift();
+            bubble.headToward(x-radius, y-radius, speed);
+            this.onLaunched(bubble);
         }
-        
-        //Bombs away!
-        bubble.headToward(x-radius, y-radius, speed);
-        this.onLaunched(bubble);
-        
-        //Remove the bubble from the canon
-        bubble = null;
     };
-    
-    this.onLaunched = function(bubble){};
+
     
 });
