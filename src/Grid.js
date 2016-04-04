@@ -1,4 +1,5 @@
 import scene.group.Group as Group;
+import effects;
 
 import src.Bubble as Bubble;
 
@@ -59,7 +60,7 @@ exports = Class(Group, function (supr) {
             
         }
         
-        interval = scene.addInterval(newRow,10000);
+        interval = scene.addInterval(newRow,15000);
     };
     
     //Adds a row on top
@@ -170,9 +171,9 @@ exports = Class(Group, function (supr) {
         if(group.length>=3){
             for(var i=0;i<group.length;i++){
                 var position = group[i].gridInfo;
-                dropBubbleAt(position.column,position.row);
+                dropBubbleAt(position.column,position.row,true);
             }
-            performGravity();
+            scene.addTimeout(performGravity,800);
         }
         
         checkEndGame();
@@ -186,13 +187,13 @@ exports = Class(Group, function (supr) {
         var lost = hasLost();
         if(lost) {
             gameEnded=true;
-            _this.onGameLost(points);
+            _this.onGameLost();
         }
         //Check if won
         var won = hasWon();
         if(won){
             gameEnded=true;
-            _this.onGameWon(points);
+            _this.onGameWon();
         }
         
         if(gameEnded){
@@ -227,12 +228,19 @@ exports = Class(Group, function (supr) {
         return lowestRow>=maxRows;
     }
     
-    function dropBubbleAt(column,row){
+    function dropBubbleAt(column,row, explode){
         var validInputs = validateCell(column,row);
         if(validInputs){
             var bubble = grid[column][row];
-            bubble.ay = 9000; //Apply gravity
+            bubble.vy = 2000; //Apply gravity
+            
+            if(explode){
+                effects.explode(bubble);
+            }
+            
             points+=10;
+            
+            _this.onPoints(points);
             
             //Remove it from the grid
             grid[column][row] = null;
@@ -455,5 +463,5 @@ exports = Class(Group, function (supr) {
     
     this.onGameWon = function(){};
     this.onGameLost = function(){};
-    
+    this.onPoints = function(){};
 });

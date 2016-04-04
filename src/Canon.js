@@ -11,9 +11,9 @@ exports = Class(Group, function (supr) {
 
     var radius;
     var speed;
-    var queue = [];
     var _this;
     var x,y;
+    var queue;
     
     this.init = function (opts) {
         this.name = "Canon";
@@ -30,16 +30,17 @@ exports = Class(Group, function (supr) {
         x = scene.screen.width/2-radius;
         y = scene.screen.height-170;
         
-        this.build(); 
-        
+        this.build();
     };
     
+
     //Prepares the canon
     this.build = function(){
+        queue = [];
         this.createBubble();
         this.createBubble();
         this.createBubble();
-    };
+    }
     
     //Creates a bubble rady to launch
     this.createBubble = function(){

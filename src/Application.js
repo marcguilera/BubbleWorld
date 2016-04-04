@@ -11,20 +11,27 @@ var rows = 4;
 
 var canon;
 var grid;
+var pointsDisplay;
 
 var points;
 var won = true;
+var gameEnded = false;
 
-//This is like scene.state.add('game')
+
+
 exports = scene(function() {
     createEnum();
-    startGame();
+    scene.preload('resources', function(){
+      scene.addBackground({image:'resources/images/game_bg.png'});
+      startGame();
+    });
 });
 
 scene.state.add('gameOver', function(){
     console.log('GameOver!');
     
-    //var gameOverBg = scene.ui.addImage({image:'resources/images/game_bg.png'});
+    scene.addBackground({image:'resources/images/game_bg.png'});
+    
     if(won){
       scene.addText("You won!",{y:200});
     }else{
@@ -32,14 +39,13 @@ scene.state.add('gameOver', function(){
     }
     
     scene.addText("Points: "+points,{y:400});
-    scene.addText("Tap to retry: ",{y:600});
+    scene.addText("Tap to retry",{y:600});
     
 },{
   tapToContinue: true,
   nextState: 'game',
   clearOnTransition: true
 });
-
 
 function createGrid(){
     grid = new Grid({
@@ -51,37 +57,47 @@ function createGrid(){
     
     scene.groups.push(grid);
     
-    grid.onGameLost = function(_points){
-      console.log('Game lost. Points = '+_points);
-      //endGame();
+    grid.onGameLost = function(){
       won=false;
-      points=_points;
       endGame();
     };
     
-    grid.onGameWon = function(_points){
-      console.log('Game won. Points ='+_points);
-      points = _points;
+    grid.onGameWon = function(){
       won=true;
       endGame();
+    };
+    
+    grid.onPoints = function(_points){
+      points=_points;
+      pointsDisplay.setText(points);
     };
 };
 
 function startGame(){
+  console.log('Start game');
   createGrid();
   createCanon();
   createTouchListener();
-  
+  points = 0;
+  gameEnded = false;
+  createPointsDisplay();
+}
+
+function createPointsDisplay(){
+  pointsDisplay = scene.addText(points,260, 940);
 }
 
 
 function endGame(){
+  console.log('End game');
+  gameEnded = true;
   //removeCollisionDetection();
   removeTouchListener();
-  destroyCanon();
   destroyGrid();
-  scene.groups = [];
-  scene.gameOver();
+  destroyCanon();
+  pointsDisplay.destroy();
+  
+  scene.state.enter('gameOver');
   
 };
 
@@ -136,8 +152,7 @@ function removeCollisionDetection(){
 
 function collision(bubble,groupBubble){
   console.log('Colision!');
-  //There was a collision between the 2 groups
-    
+  
   //1. Compute the colision with the grid
   grid.collide(bubble,groupBubble);
   
@@ -173,3 +188,6 @@ function createEnum(){
         GREEN: 5
     };
 };
+
+
+console.warn = function() {}
